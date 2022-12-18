@@ -2,11 +2,15 @@ import json
 from pathlib import Path
 
 from kivy.app import App
+from kivy.clock import Clock
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.textinput import TextInput
 from pyrogram import Client
+from pyrogram.errors.exceptions.bad_request_400 import ApiIdInvalid
+from pyrogram.errors.exceptions.bad_request_400 import BadRequest
+from pyrogram.errors.exceptions.not_acceptable_406 import PhoneNumberInvalid
 from pyrogram.errors.exceptions.unauthorized_401 import SessionPasswordNeeded
 
 
@@ -19,16 +23,12 @@ class ScreenManagement(ScreenManager):
     def __init__(self, **kwargs):
         super(ScreenManagement, self).__init__(**kwargs)
 
-
 class Auth(Screen):
     def __init__(self, **kwargs):
         super(Auth, self).__init__(**kwargs)
-        self.btn_start = Button(text="Start", font_size=35, size_hint=(.4, .15),
-                                pos_hint={"center_x": 0.5, "center_y": 0.4})
-        self.btn_start.bind(on_press=self.start)
-        self.add_widget(self.btn_start)
+        Clock.schedule_once(self.start, 0)
 
-    def start(self, event):
+    def start(self, dt):
         fle = Path('sessions.json')
         fle.touch(exist_ok=True)
         if self.load_js() == "":
@@ -51,11 +51,28 @@ class Auth(Screen):
         self.add_widget(self.api_hash)
         self.btn = Button(text='Authorization', size_hint=(.35, .08), pos_hint={'center_x': .5, 'y': .1})
         self.add_widget(self.btn)
-        self.btn.bind(on_press=self.submit)
+        self.btn.bind(on_press=self.check)
 
-    def submit(self, event):
-        if self.number.text == "" and self.api_id.text == "" and self.api_hash.text == "":
-            return 0
+    def check(self, event):
+        try:
+            if self.number.text == "" and self.api_id.text == "" and self.api_hash.text == "":
+                return 0
+            App.get_running_app().session = Client("1", api_id=self.api_id.text, api_hash=self.api_hash.text)
+            App.get_running_app().session.connect()
+            self.hash_code = App.get_running_app().session.send_code(self.number.text).phone_code_hash
+        except (ApiIdInvalid, PhoneNumberInvalid):
+            self.lbl_inv = Label(text="Invalid account", font_size=25, size_hint=(.5, .1),
+                                 pos_hint={'center_x': .5, 'y': .25}, color=(1, 0, 0, 0.5))
+            self.add_widget(self.lbl_inv)
+            return None
+        else:
+            self.submit()
+
+    def submit(self):
+        try:
+            self.remove_widget(self.lbl_inv)
+        except:
+            pass
         self.remove_widget(self.btn)
         self.add_widget(Label(text="Code", font_size=25, size_hint=(.45, .1), pos_hint={'x': .05, 'y': .25}))
         self.code = TextInput(multiline=False, size_hint=(.2, .05), pos_hint={'center_x': .5, 'y': .28})
@@ -63,9 +80,10 @@ class Auth(Screen):
         self.auth = Button(text='Confirm', size_hint=(.24, .05), pos_hint={'center_x': .8, 'y': .28})
         self.auth.bind(on_press=self.confirm_auth)
         self.add_widget(self.auth)
-        App.get_running_app().session = Client("1", api_id=self.api_id.text, api_hash=self.api_hash.text)
-        App.get_running_app().session.connect()
-        self.hash_code = App.get_running_app().session.send_code(self.number.text).phone_code_hash
+        try:
+            self.remove_widget(self.lbl_inv)
+        except:
+            pass
 
     def confirm_auth(self, event):
         info = {
@@ -90,9 +108,19 @@ class Auth(Screen):
             self.add_widget(self.log_pass)
 
     def confirm_auth_2fa(self, event):
-        App.get_running_app().session.check_password(self.passw.text)
-        App.get_running_app().session.sign_in(self.number.text, self.hash_code, self.code.text)
-        App.get_running_app().login()
+        try:
+            App.get_running_app().session.check_password(self.passw.text)
+        except BadRequest:
+            self.lbl_inv2 = Label(text="Invalid", font_size=20, size_hint=(.24, .05),
+                                  pos_hint={'center_x': .85, 'y': .13}, color=(1, 0, 0, 0.5))
+            self.add_widget(self.lbl_inv2)
+        else:
+            try:
+                self.remove_widget(self.lbl_inv2)
+            except:
+                pass
+            App.get_running_app().session.sign_in(self.number.text, self.hash_code, self.code.text)
+            App.get_running_app().login()
 
     def load_js(self):
         with open("sessions.json", "r") as f:
@@ -112,10 +140,20 @@ class Auth(Screen):
 class Menu(Screen):
     def __init__(self, **kwargs):
         super(Menu, self).__init__(**kwargs)
-        self.add_widget(
+        '''self.add_widget(
             Label(text="Hi", font_size=40, size_hint=(.45, .1), pos_hint={'center_x': .5, 'y': .85}))
-        print(App.get_running_app().session.get_me())
+        print(App.get_running_app().session.get_me())'''
+        self.add_widget(Label(text="Pass", font_size=25, size_hint=(.45, .1), pos_hint={'left_x': .001, 'y': .1}))
+        self.passw = TextInput(multiline=False, size_hint=(.2, .05), pos_hint={'x': .4, 'y': .13})
+        self.add_widget(self.passw)
+        self.log_pass = Button(text='Confirm', size_hint=(.15, .05), pos_hint={'center_x': .7, 'y': .13})
+        self.log_pass.bind(on_press=self.confirm_auth_2fa)
+        self.add_widget(self.log_pass)
+        self.add_widget(Label(text="Invalid", font_size=20, size_hint=(.24, .05), pos_hint={'center_x': .85, 'y': .13},
+                              color=(1, 0, 0, 0.5)))
 
+    def confirm_auth_2fa(self, event):
+        pass
 class Settings(Screen):
     pass
 
