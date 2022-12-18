@@ -81,6 +81,7 @@ class Auth(Screen):
             App.get_running_app().session.sign_in(self.number.text, self.hash_code, self.code.text)
             App.get_running_app().login()
         except SessionPasswordNeeded as e:
+            self.remove_widget(self.auth)
             self.add_widget(Label(text="2Fa Pass", font_size=25, size_hint=(.45, .1), pos_hint={'x': .05, 'y': .1}))
             self.passw = TextInput(multiline=False, size_hint=(.2, .05), pos_hint={'center_x': .5, 'y': .13})
             self.add_widget(self.passw)
