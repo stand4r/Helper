@@ -1,18 +1,14 @@
-from kivy.app import App
-from kivy.uix.label import Label
-from kivy.uix.button import Button
-from kivy.uix.textinput import TextInput
-from kivy.uix.screenmanager import ScreenManager, Screen
-from pyrogram import Client
-from os.path import exists
 import json
+from os.path import exists
 from pathlib import Path
+
+from kivy.app import App
+from kivy.uix.button import Button
+from kivy.uix.label import Label
+from kivy.uix.screenmanager import ScreenManager, Screen
+from kivy.uix.textinput import TextInput
+from pyrogram import Client
 from pyrogram.errors.exceptions.unauthorized_401 import SessionPasswordNeeded
-
-
-# number = +447438560762
-# api_id = 20206583
-# api_hash = 3afbd800063c5ba2e6ad0682ca25e9fc
 
 # number = +79171418765
 # api_id = 7640328
@@ -98,8 +94,9 @@ class Auth(Screen):
         api_id = json_file["api_id"]
         api_hash = json_file["api_hash"]
         if exists(name + ".session"):
-            self.session = Client(name=name, api_id=api_id, api_hash=api_hash)
-            self.session.start()
+            session = Client(name=name, api_id=api_id, api_hash=api_hash)
+            session.start()
+            session.stop()
             self.manager.current = "menu"
 
 
@@ -136,6 +133,3 @@ class MainApp(App):
 
 if __name__ == '__main__':
     MainApp().run()
-# создать окно входа
-# закончить с сессиями
-# git
