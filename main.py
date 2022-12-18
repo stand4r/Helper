@@ -14,11 +14,6 @@ from pyrogram.errors.exceptions.not_acceptable_406 import PhoneNumberInvalid
 from pyrogram.errors.exceptions.unauthorized_401 import SessionPasswordNeeded
 
 
-# number = +79171418765
-# api_id = 7640328
-# api_hash = e8fecf361251bc064b959f193f04a308
-
-
 class ScreenManagement(ScreenManager):
     def __init__(self, **kwargs):
         super(ScreenManagement, self).__init__(**kwargs)
