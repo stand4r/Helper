@@ -3,6 +3,7 @@ from pathlib import Path
 
 from kivy.app import App
 from kivy.clock import Clock
+from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.screenmanager import ScreenManager, Screen
@@ -135,20 +136,49 @@ class Auth(Screen):
 class Menu(Screen):
     def __init__(self, **kwargs):
         super(Menu, self).__init__(**kwargs)
-        '''self.add_widget(
-            Label(text="Hi", font_size=40, size_hint=(.45, .1), pos_hint={'center_x': .5, 'y': .85}))
-        print(App.get_running_app().session.get_me())'''
-        self.add_widget(Label(text="Pass", font_size=25, size_hint=(.45, .1), pos_hint={'left_x': .001, 'y': .1}))
-        self.passw = TextInput(multiline=False, size_hint=(.2, .05), pos_hint={'x': .4, 'y': .13})
-        self.add_widget(self.passw)
-        self.log_pass = Button(text='Confirm', size_hint=(.15, .05), pos_hint={'center_x': .7, 'y': .13})
-        self.log_pass.bind(on_press=self.confirm_auth_2fa)
-        self.add_widget(self.log_pass)
-        self.add_widget(Label(text="Invalid", font_size=20, size_hint=(.24, .05), pos_hint={'center_x': .85, 'y': .13},
-                              color=(1, 0, 0, 0.5)))
+        self.screen = BoxLayout(orientation='horizontal')
+        self.layout_menu = BoxLayout(orientation="vertical", spacing=60, padding=20, size_hint=(0.5, 1))
+        self.layout_info = BoxLayout(orientation="vertical", spacing=0, size_hint=(1, 0.5),
+                                     pos_hint={'center_x': 0.5, "y": 0.4})
+        # Init Menu
+        self.btn_settings = Button(text="Account Info", font_size=23, size_hint=(0.9, 0.1))
+        self.btn_settings.bind(on_press=self.change_screen_settings)
+        self.btn_spam = Button(text="Spam", font_size=23, size_hint=(0.9, 0.1))
+        self.btn_spam.bind(on_press=self.change_screen_spam)
+        self.btn_invite = Button(text="Invite", font_size=23, size_hint=(0.9, 0.1))
+        self.btn_invite.bind(on_press=self.change_screen_invite)
+        self.btn_logout = Button(text="Logout", font_size=23, size_hint=(0.9, 0.1))
+        self.btn_logout.bind(on_press=self.change_screen_logout)
+        self.layout_menu.add_widget(self.btn_spam)
+        self.layout_menu.add_widget(self.btn_invite)
+        self.layout_menu.add_widget(self.btn_settings)
+        self.layout_menu.add_widget(self.btn_logout)
+        # Init Info
+        self.acc = App.get_running_app().session.get_me()
+        self.layout_info.add_widget(Label(text="Welcome", font_size=40, pos_hint={'center_x': .5, 'y': .6}))
+        self.layout_info.add_widget(
+            Label(text=f"Account_name: {self.acc.first_name} {self.acc.last_name}", font_size=20,
+                  pos_hint={'center_x': .5, 'y': .3}))
+        self.layout_info.add_widget(
+            Label(text=f"Username: @{self.acc.username}", font_size=20, pos_hint={'center_x': .5, 'y': .3}))
+        # Init Screen
+        self.screen.add_widget(self.layout_menu)
+        self.screen.add_widget(self.layout_info)
+        self.add_widget(self.screen)
 
-    def confirm_auth_2fa(self, event):
-        pass
+    def change_screen_settings(self, event):
+        self.manager.current = "sett"
+
+    def change_screen_spam(self, event):
+        self.manager.current = "spam"
+
+    def change_screen_invite(self, event):
+        self.manager.current = "invite"
+
+    def change_screen_logout(self, event):
+        self.manager.current = "logout"
+
+
 class Settings(Screen):
     pass
 
@@ -158,6 +188,10 @@ class Spam(Screen):
 
 
 class Invite(Screen):
+    pass
+
+
+class Logout(Screen):
     pass
 
 
@@ -184,13 +218,16 @@ class MainApp(App):
         self.screen.add_widget(Settings(name="sett"))
         self.screen.add_widget(Spam(name="spam"))
         self.screen.add_widget(Invite(name="invite"))
+        self.screen.add_widget(Logout(name="logout"))
 
     def login(self):
         self.screen.add_widget(Menu(name="menu"))
         self.screen.add_widget(Settings(name="sett"))
         self.screen.add_widget(Spam(name="spam"))
         self.screen.add_widget(Invite(name="invite"))
+        self.screen.add_widget(Logout(name="logout"))
         self.screen.current = "menu"
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     MainApp().run()
